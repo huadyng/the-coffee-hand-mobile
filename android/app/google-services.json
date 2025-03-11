@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "137349428578",
+    "project_id": "thecoffeehand-3bf49",
+    "storage_bucket": "thecoffeehand-3bf49.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:137349428578:android:31047e648f4ab34b5b283b",
+        "android_client_info": {
+          "package_name": "com.company.thecoffeehand"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "137349428578-9luv14s5dobel3ot140qf0tjksfl05rm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.company.thecoffeehand",
+            "certificate_hash": "508b382a84fd3b531dac0730ceb98d771a9db1c8"
+          }
+        },
+        {
+          "client_id": "137349428578-vpvg452ld397066tvnb8l3hm2gukth0e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSkQRvy5z_kiDuoBvV7ZBIu7UAaEsnv_g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "137349428578-83dmnnhi049q43mfb5j6mu9oefgaapeo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
