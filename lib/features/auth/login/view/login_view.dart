@@ -97,7 +97,7 @@ class _LoginViewState extends State<LoginView> with LoginViewMixin {
                             ),
                           ),
                           onPressed: () {
-                            //signInWithGoogle();
+                            signInWithGoogle();
                           },
                           child: const Text(
                             'Sign in with Google',

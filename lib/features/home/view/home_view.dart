@@ -75,7 +75,6 @@ class _HomeViewState extends State<HomeView> with HomeViewMixin {
               children: buildCategoryList(),
             ),
 
-            const SizedBox(height: 30),
             // Khuyến mãi (Chiếm toàn bộ chiều ngang)
             Container(
               padding: const EdgeInsets.all(16),

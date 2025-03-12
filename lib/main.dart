@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'core/router/router_manager.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,5 +46,16 @@ Future<void> _initializeFirebase() async {
     }
   } catch (e) {
     print("Lỗi khởi tạo Firebase: $e");
+  }
+}
+
+void checkUserStatus() {
+  FirebaseAuth auth = FirebaseAuth.instance;
+  User? user = auth.currentUser; // Lấy thông tin user hiện tại
+
+  if (user != null) {
+    print("✅ Người dùng đã đăng nhập: ${user.email}");
+  } else {
+    print("⚠️ Chưa có ai đăng nhập.");
   }
 }
