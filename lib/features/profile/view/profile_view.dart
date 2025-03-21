@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:go_router/go_router.dart';
-import 'package:the_coffee_hand_mobile/core/router/routes.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
