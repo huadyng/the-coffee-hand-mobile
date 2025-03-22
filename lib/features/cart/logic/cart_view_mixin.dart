@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:the_coffee_hand_mobile/features/cart/services/order_manager.dart';
+import 'package:the_coffee_hand_mobile/network/api_client.dart';
 
 mixin CartViewMixin<T extends StatefulWidget> on State<T> {
   List<Map<String, dynamic>> cartItems = [
@@ -23,12 +25,11 @@ mixin CartViewMixin<T extends StatefulWidget> on State<T> {
   // Hàm tính tổng giá trị giỏ hàng
   int getTotalPrice() {
     return cartItems.fold<int>(0, (sum, item) {
-      int price = (item["price"] as num).toInt(); // Chuyển giá về int
-      int quantity = (item["quantity"] as num).toInt(); // Chuyển số lượng về int
+      int price = (item["price"] as num).toInt();
+      int quantity = (item["quantity"] as num).toInt();
       return sum + (price * quantity);
     });
   }
-
 
   // Hàm tăng số lượng
   void increaseQuantity(int index) {
@@ -67,57 +68,67 @@ mixin CartViewMixin<T extends StatefulWidget> on State<T> {
           // Ảnh sản phẩm
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset(item["image"], width: 60, height: 60, fit: BoxFit.cover),
+            child: Image.asset(item["image"],
+                width: 60, height: 60, fit: BoxFit.cover),
           ),
           const SizedBox(width: 12),
-
           // Thông tin sản phẩm
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item["name"], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                Text(item["description"], style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(item["name"],
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(item["description"],
+                    style: const TextStyle(
+                        color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 4),
-                Text("Rp ${item["price"]}", style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                Text("Rp ${item["price"]}",
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-
-          // Chọn size, tăng/giảm số lượng, nút xoá
+          // Khu vực tăng/giảm số lượng, chọn size
           Column(
             children: [
-              // Nút chọn size
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.grey[800],
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(item["size"], style: const TextStyle(color: Colors.white)),
+                child: Text(item["size"],
+                    style: const TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 8),
-
-              // Nút tăng/giảm số lượng
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.remove, color: Colors.white, size: 16),
+                    icon: const Icon(Icons.remove,
+                        color: Colors.white, size: 16),
                     onPressed: () => decreaseQuantity(index),
                   ),
-                  Text("${item["quantity"]}", style: const TextStyle(color: Colors.white, fontSize: 14)),
+                  Text("${item["quantity"]}",
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 14)),
                   IconButton(
-                    icon: const Icon(Icons.add, color: Colors.white, size: 16),
+                    icon: const Icon(Icons.add,
+                        color: Colors.white, size: 16),
                     onPressed: () => increaseQuantity(index),
                   ),
                 ],
               ),
             ],
           ),
-
-          // Nút xoá
+          // Nút xoá sản phẩm
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.white, size: 18),
+            icon: const Icon(Icons.delete,
+                color: Colors.white, size: 18),
             onPressed: () => removeItem(index),
           ),
         ],
@@ -125,11 +136,11 @@ mixin CartViewMixin<T extends StatefulWidget> on State<T> {
     );
   }
 
-  // Widget hiển thị tổng tiền và nút checkout
+  // Widget hiển thị tổng tiền và nút Checkout
   Widget buildCartSummary() {
     return Container(
       padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 16), // Tránh che bởi Bottom Navigation
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.grey[900],
         borderRadius: BorderRadius.circular(12),
@@ -137,29 +148,72 @@ mixin CartViewMixin<T extends StatefulWidget> on State<T> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tổng tiền
+          // Hiển thị tổng tiền
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Subtotal (${cartItems.length} items)", style: const TextStyle(color: Colors.white, fontSize: 14)),
-              Text("Rp ${getTotalPrice()}", style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+              Text("Subtotal (${cartItems.length} items)",
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 14)),
+              Text("Rp ${getTotalPrice()}",
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 12),
-
-          // Nút Checkout
+          // Nút Checkout tích hợp API
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.brown,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              onPressed: () {
-                // Xử lý thanh toán
+              onPressed: () async {
+                // Khởi tạo ApiClient và OrderManager
+                final apiClient = ApiClient();
+                final orderManager =
+                OrderManager(apiClient: apiClient);
+
+                // Giả sử lấy userId từ auth hoặc lưu trữ, dùng placeholder cho ví dụ
+                const userId = "user-id-placeholder";
+
+                // Hiển thị loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+
+                try {
+                  // Gọi API xử lý checkout
+                  await orderManager.handleCheckout(userId);
+                  Navigator.of(context).pop(); // Ẩn loading
+
+                  // Thông báo thành công
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Checkout successful!"),
+                    ),
+                  );
+                } catch (error) {
+                  Navigator.of(context).pop(); // Ẩn loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Checkout failed: $error"),
+                    ),
+                  );
+                }
               },
-              child: const Text("Checkout", style: TextStyle(color: Colors.white, fontSize: 16)),
+              child: const Text("Checkout",
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 16)),
             ),
           ),
         ],

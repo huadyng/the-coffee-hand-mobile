@@ -1,35 +1,51 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 class ApiClient {
-  static const String baseUrl = 'https://your-api-base-url.com/api';
+  final String baseUrl;
 
-  Future<http.Response> get(String endpoint) async {
+  ApiClient({this.baseUrl = AppConfig.apiBaseUrl});
+
+  Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
     final url = Uri.parse('$baseUrl$endpoint');
-    final response = await http.get(url, headers: {
-      'Content-Type': 'application/json',
-    });
-    if (response.statusCode == 200) {
-      return response;
-    } else {
-      throw Exception('Failed to load data');
-    }
+    final response = await http.get(url, headers: headers);
+    return _handleResponse(response);
   }
 
-  Future<http.Response> post(String endpoint, Map<String, dynamic> data) async {
+  Future<dynamic> post(String endpoint, dynamic data, {Map<String, String>? headers}) async {
     final url = Uri.parse('$baseUrl$endpoint');
     final response = await http.post(
       url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: headers ?? {'Content-Type': 'application/json'},
       body: jsonEncode(data),
     );
+    return _handleResponse(response);
+  }
 
-    if (response.statusCode == 200) {
-      return response;
+  Future<dynamic> put(String endpoint, dynamic data, {Map<String, String>? headers}) async {
+    final url = Uri.parse('$baseUrl$endpoint');
+    final response = await http.put(
+      url,
+      headers: headers ?? {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
+    final url = Uri.parse('$baseUrl$endpoint');
+    final response = await http.delete(url, headers: headers);
+    return _handleResponse(response);
+  }
+
+  dynamic _handleResponse(http.Response response) {
+    final statusCode = response.statusCode;
+    final body = response.body;
+    if (statusCode >= 200 && statusCode < 300) {
+      return jsonDecode(body);
     } else {
-      throw Exception('Failed to send data');
+      throw Exception('Error: $statusCode - $body');
     }
   }
 }
