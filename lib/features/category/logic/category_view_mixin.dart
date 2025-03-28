@@ -68,9 +68,7 @@ mixin CategoryViewMixin<T extends StatefulWidget> on State<T> {
       errorMessage = '';
     });
 
-
-
-    final url = Uri.parse("${AppConfig.apiBaseUrl}/drink/e4a9667c-dfd4-4c63-b273-ad8f6f5eecdb");
+    final url = Uri.parse("${AppConfig.apiBaseUrl}/drink/paginated?pageNumber=1&pageSize=10");
     print("🟢 Gọi API đến URL: $url");  // In ra URL đang gọi
 
     try {
@@ -82,22 +80,30 @@ mixin CategoryViewMixin<T extends StatefulWidget> on State<T> {
         print("✅ Dữ liệu nhận được từ API: $jsonData");
 
         // Kiểm tra xem sản phẩm có thuộc category mong muốn không
-        if (jsonData["category"]["name"] == category) {
-          setState(() {
-            products = [
-              {
-                "name": jsonData["name"],
-                "description": jsonData["description"] ?? "No description",
-                "price": jsonData["price"].toString(),
-                "image": jsonData["imageUrl"] ?? "assets/images/default-profile-photo.png"
-              }
-            ];
-          });
-        } else {
-          setState(() {
-            products = []; // Không có sản phẩm phù hợp
-          });
+        if (jsonData == null || jsonData["items"] == null) {
+          throw "Dữ liệu API không hợp lệ hoặc rỗng!";
         }
+
+        List<Map<String, dynamic>> loadedProducts = [];
+
+        for (var item in jsonData["items"]) {
+          // 🔹 CHỈNH SỬA Ở ĐÂY: Kiểm tra `category` trước khi truy cập `name`
+          var categoryData = item["category"];
+          if (categoryData != null && categoryData["name"] == category) {
+
+            loadedProducts.add({
+              "name": item["name"] ?? "No name",
+              "category": categoryData["name"],// 🔹 CHỈNH SỬA Ở ĐÂY: Xử lý null
+              "description": item["description"] ?? "No description", // 🔹 CHỈNH SỬA Ở ĐÂY: Xử lý null
+              "price": item["price"]?.toString() ?? "0", // 🔹 CHỈNH SỬA Ở ĐÂY: Xử lý null
+              "image": item["imageUrl"] ?? "assets/images/default-profile-photo.png" // 🔹 CHỈNH SỬA Ở ĐÂY: Xử lý null
+            });
+          }
+        }
+
+        setState(() {
+          products = loadedProducts;
+        });
 
         print("📌 Dữ liệu sau khi lọc và xử lý: $products");
       } else {
@@ -156,7 +162,7 @@ mixin CategoryViewMixin<T extends StatefulWidget> on State<T> {
     // Lọc sản phẩm dựa trên danh mục đang chọn
     final selectedCategory = categories[selectedCategoryIndex];
     final filteredProducts = products.where((item) {
-      return item["name"] == selectedCategory;
+      return item["category"] == selectedCategory;
     }).toList();
 
     // Tạo danh sách widget từ các sản phẩm đã lọc
