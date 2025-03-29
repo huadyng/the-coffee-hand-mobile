@@ -1,36 +1,129 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../config/app_config.dart';
 
 mixin CategoryViewMixin<T extends StatefulWidget> on State<T> {
   int selectedCategoryIndex = 0; // Chỉ mục của danh mục được chọn
 
-  final List<String> categories = ["Cappuccino", "Macchiato", "Latte"];
+  List<String> categories = []; // 🔹 Lấy từ API thay vì danh sách cứng
+  List<Map<String, dynamic>> products = [];
 
-  final List<Map<String, String>> products = [
-    {
-      "name": "Cappuccino",
-      "description": "with Chocolate",
-      "price": "4.53",
-      "image": "assets/images/default-profile-photo.png"
-    },
-    {
-      "name": "Cappuccino",
-      "description": "with Oat Milk",
-      "price": "3.90",
-      "image": "assets/images/default-profile-photo.png"
-    },
-    {
-      "name": "Macchiato",
-      "description": "Caramel Flavor",
-      "price": "5.20",
-      "image": "assets/images/default-profile-photo.png"
-    },
-    {
-      "name": "Latte",
-      "description": "Creamy & Smooth",
-      "price": "4.80",
-      "image": "assets/images/default-profile-photo.png"
-    },
-  ];
+  bool isLoading = false;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCategories(); // 🔹 Gọi API lấy danh mục trước
+  }
+
+// 🔹 API lấy danh sách danh mục từ Swagger
+  Future<void> fetchCategories() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    final url = Uri.parse("${AppConfig.apiBaseUrl}/categories/paginated?pageNumber=1&pageSize=10"); // 🔹 Sử dụng apiBaseUrl
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        var jsonData = json.decode(response.body);
+
+        List<String> fetchedCategories =
+        List<String>.from(jsonData["items"].map((item) => item["name"]));
+
+        setState(() {
+          categories = fetchedCategories; // 🔹 Cập nhật danh mục từ API
+        });
+
+        // 🔹 Gọi API lấy sản phẩm nếu danh mục không rỗng
+        if (categories.isNotEmpty) {
+          selectedCategoryIndex = 0; // Chọn danh mục đầu tiên
+          fetchDrinksByCategory(categories[selectedCategoryIndex]);
+        }
+      } else {
+        setState(() {
+          errorMessage = "Lỗi: Không thể lấy danh mục (Mã lỗi ${response.statusCode})";
+        });
+      }
+    } catch (error) {
+      setState(() {
+        errorMessage = "Lỗi khi lấy danh mục: $error";
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+// 🔹 API lấy danh sách sản phẩm theo danh mục
+  Future<void> fetchDrinksByCategory(String category) async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    final url = Uri.parse("${AppConfig.apiBaseUrl}/drink/paginated?pageNumber=1&pageSize=10");
+    print("🟢 Gọi API đến URL: $url");  // In ra URL đang gọi
+
+    try {
+      final response = await http.get(url);
+      print("📥 Nhận được phản hồi từ API (Status Code: ${response.statusCode})"); // In ra mã trạng thái
+
+      if (response.statusCode == 200) {
+        var jsonData = json.decode(response.body); // API trả về một Map
+        print("✅ Dữ liệu nhận được từ API: $jsonData");
+
+        // Kiểm tra xem sản phẩm có thuộc category mong muốn không
+        if (jsonData == null || jsonData["items"] == null) {
+          throw "Dữ liệu API không hợp lệ hoặc rỗng!";
+        }
+
+        List<Map<String, dynamic>> loadedProducts = [];
+
+        for (var item in jsonData["items"]) {
+          // 🔹 CHỈNH SỬA Ở ĐÂY: Kiểm tra `category` trước khi truy cập `name`
+          var categoryData = item["category"];
+          if (categoryData != null && categoryData["name"] == category) {
+
+            loadedProducts.add({
+              "name": item["name"] ?? "No name",
+              "category": categoryData["name"],// 🔹 CHỈNH SỬA Ở ĐÂY: Xử lý null
+              "description": item["description"] ?? "No description", // 🔹 CHỈNH SỬA Ở ĐÂY: Xử lý null
+              "price": item["price"]?.toString() ?? "0", // 🔹 CHỈNH SỬA Ở ĐÂY: Xử lý null
+              "image": item["imageUrl"] ?? "assets/images/default-profile-photo.png" // 🔹 CHỈNH SỬA Ở ĐÂY: Xử lý null
+            });
+          }
+        }
+
+        setState(() {
+          products = loadedProducts;
+        });
+
+        print("📌 Dữ liệu sau khi lọc và xử lý: $products");
+      } else {
+        setState(() {
+          errorMessage = "Lỗi: Không thể lấy dữ liệu (Mã lỗi ${response.statusCode})";
+        });
+        print("❌ Lỗi khi gọi API: Mã lỗi ${response.statusCode}");
+      }
+    } catch (error) {
+      setState(() {
+        errorMessage = "Lỗi khi gọi API: $error";
+      });
+      print("⚠️ Lỗi xảy ra khi gọi API: $error");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+      print("🔄 Hoàn thành việc gọi API, isLoading = false");
+    }
+  }
 
   // Tạo danh sách button category
   List<Widget> buildCategoryButtons() {
@@ -43,6 +136,7 @@ mixin CategoryViewMixin<T extends StatefulWidget> on State<T> {
             setState(() {
               selectedCategoryIndex = index;
             });
+            fetchDrinksByCategory(categories[index]);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -68,7 +162,7 @@ mixin CategoryViewMixin<T extends StatefulWidget> on State<T> {
     // Lọc sản phẩm dựa trên danh mục đang chọn
     final selectedCategory = categories[selectedCategoryIndex];
     final filteredProducts = products.where((item) {
-      return item["name"] == selectedCategory;
+      return item["category"] == selectedCategory;
     }).toList();
 
     // Tạo danh sách widget từ các sản phẩm đã lọc
@@ -86,7 +180,7 @@ mixin CategoryViewMixin<T extends StatefulWidget> on State<T> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
+                  child: Image.network(
                     item["image"]!,
                     height: 120,
                     width: double.infinity,
